@@ -1,0 +1,120 @@
+/* Examine the data */
+SELECT TOP 10 *
+FROM household_power_consumption;
+
+
+/* Ensure that there is the same amount of values for each column */
+SELECT 
+    COUNT(*) AS TotalRows, 
+    COUNT(Date) AS RowsWithDate, 
+    COUNT(Time) AS RowsWithTime, 
+    COUNT(Global_active_power) AS RowsWithGlobalActivePower,
+    COUNT(Global_reactive_power) AS RowsWithGlobalReactivePower,
+    COUNT(Voltage) AS RowsWithVoltage,
+    COUNT(Global_intensity) AS RowsWithGlobalIntensity,
+    COUNT(Sub_metering_1) AS RowsWithSubMetering1,
+    COUNT(Sub_metering_2) AS RowsWithSubMetering2,
+    COUNT(Sub_metering_3) AS RowsWithSubMetering3
+FROM household_power_consumption;
+
+
+/* Ensure Proper Data Types */
+ALTER TABLE household_power_consumption
+ALTER COLUMN Date DATE;
+
+ALTER TABLE household_power_consumption
+ALTER COLUMN Time TIME;
+
+UPDATE household_power_consumption
+SET Voltage = ROUND(Voltage, 2);
+
+
+/* Check Null Values */
+SELECT 
+    COUNT(*) AS NullValues 
+FROM household_power_consumption 
+WHERE Global_active_power IS NULL 
+   OR Global_reactive_power IS NULL
+   OR Voltage IS NULL
+   OR Global_intensity IS NULL
+   OR Sub_metering_1 IS NULL
+   OR Sub_metering_2 IS NULL
+   OR Sub_metering_3 IS NULL;
+
+
+/* Check for Duplicate Data */
+SELECT Date, Time, COUNT(*) 
+FROM household_power_consumption
+GROUP BY Date, Time
+HAVING COUNT(*) > 1;
+
+
+/* Check for Outliers or Values Under 0 */
+SELECT * 
+FROM household_power_consumption
+WHERE Global_active_power < 0 OR Global_reactive_power < 0;
+
+
+/* Summarizing Data for Analysis */
+SELECT 
+    Date,
+    AVG(Global_active_power) AS Avg_Global_active_power,
+    AVG(Global_reactive_power) AS Avg_Global_reactive_power,
+    ROUND(AVG(Voltage), 2) AS Avg_Voltage
+FROM household_power_consumption
+GROUP BY Date;
+
+
+/* Time-Based Aggregation */
+SELECT 
+    CAST(Date AS DATE) AS Date,  -- Ensure the Date is in date format
+    AVG(Global_active_power) AS Avg_Global_active_power,
+    AVG(Global_reactive_power) AS Avg_Global_reactive_power,
+    AVG(Voltage) AS Avg_Voltage
+FROM household_power_consumption
+GROUP BY CAST(Date AS DATE)
+ORDER BY Date;
+
+
+/* Hourly Analysis */
+SELECT 
+    DATEPART(HOUR, Time) AS Hour,
+    AVG(Global_active_power) AS Avg_Global_active_power,
+    AVG(Global_reactive_power) AS Avg_Global_reactive_power,
+    AVG(Voltage) AS Avg_Voltage
+FROM household_power_consumption
+GROUP BY DATEPART(HOUR, Time)
+ORDER BY Hour;
+
+
+/* Yearly and Monthly Analysis */
+SELECT 
+    YEAR(Date) AS Year,
+    MONTH(Date) AS Month,
+    AVG(Global_active_power) AS Avg_Global_active_power,
+    AVG(Global_reactive_power) AS Avg_Global_reactive_power,
+    AVG(Voltage) AS Avg_Voltage
+FROM household_power_consumption
+GROUP BY YEAR(Date), MONTH(Date)
+ORDER BY Year, Month;
+
+
+/* Trend Analysis (Moving Average) */
+SELECT 
+    Date,
+    AVG(Global_active_power) OVER (ORDER BY Date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS Moving_Avg_7Days
+FROM household_power_consumption
+ORDER BY Date;
+
+
+/* Relationships Between Variables */
+SELECT 
+    (COUNT(*) * SUM(Global_active_power * Voltage) - SUM(Global_active_power) * SUM(Voltage)) / 
+    (SQRT(
+        (COUNT(*) * SUM(Global_active_power * Global_active_power) - SUM(Global_active_power) * SUM(Global_active_power)) *
+        (COUNT(*) * SUM(Voltage * Voltage) - SUM(Voltage) * SUM(Voltage))
+    )) AS Correlation_Coefficient
+FROM household_power_consumption;
+
+
+
